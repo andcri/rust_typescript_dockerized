@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+  db:
+    image: "postgres:11"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data/pgdata
+    environment:
+      POSTGRES_PASSWORD: supersecretpassword
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+  web:
+    build: ./web
+    volumes:
+      - ./web:/usr/src/app
+    ports:
+      - "3000:3000"
+    command: bash -c "yarn && yarn start"
+
+  api:
+    build: ./api
+    stdin_open: true
+    volumes:
+     - .:/api
+    ports:
+     - "8000:8000"
+
+volumes:
+  pgdata: {}
