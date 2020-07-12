@@ -9,7 +9,7 @@ export default function App () {
   const [data, setData] = useState(0);
 
   useEffect(() => {
-    axios.get('/api/names')
+    axios.get('/api')
       .then(res => {
         console.log(res)
         setData(0);
@@ -22,7 +22,7 @@ export default function App () {
       <button onClick = {() => setCount(count + 1)}>
         Clicked
       </button>
-      <p>here: {data}</p>
+      <p>here test: {data}</p>
     </div>
   );
 }
