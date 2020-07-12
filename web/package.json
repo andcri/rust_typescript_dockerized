@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "axios": "^0.19.2",
+    "bootstrap": "^4.5.0",
     "react": "^16.5.0",
     "react-dom": "^16.5.0",
     "react-scripts-ts": "2.17.0"
@@ -12,7 +13,9 @@
     "start": "react-scripts-ts start",
     "build": "react-scripts-ts build",
     "test": "react-scripts-ts test --env=jsdom",
-    "eject": "react-scripts-ts eject"
+    "eject": "react-scripts-ts eject",
+    "build:css": "postcss src/assets/tailwind.css -o src/assets/main.css", 
+    "watch:css": "postcss src/assets/tailwind.css -o src/assets/main.css"
   },
   "proxy": {
     "/api": {
@@ -25,7 +28,10 @@
     "@types/node": "^10.9.4",
     "@types/react": "^16.4.13",
     "@types/react-dom": "^16.0.7",
+    "autoprefixer": "^9.8.5",
+    "postcss-cli": "^7.1.1",
     "prettier": "^1.14.2",
+    "tailwindcss": "^1.4.6",
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.0.3"
   }
