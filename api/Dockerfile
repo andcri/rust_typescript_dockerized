@@ -1,20 +1,16 @@
-FROM rust:1.28.0-stretch as builder
+FROM ubuntu:20.04
 
 # muslc is required in order to build the rust image.
-RUN apt-get update && apt-get -y install ca-certificates cmake musl-tools libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y install ca-certificates curl build-essential
 
-COPY . .
-RUN rustup target add x86_64-unknown-linux-musl
-# Sets the environment variable for the cargo build command that follows.
-ENV PKG_CONFIG_ALLOW_CROSS=1
-RUN cargo build --target x86_64-unknown-linux-musl --release
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-FROM alpine:3.8
+COPY . /srv/api
 
-RUN apk --no-cache add ca-certificates 
-COPY --from=builder /target/x86_64-unknown-linux-musl/release/rust-actix-web .
+WORKDIR /srv/api
 
-CMD ["/rust-actix-web"]
+RUN cargo install systemfd cargo-watch
 
-EXPOSE 8000
+RUN cargo build

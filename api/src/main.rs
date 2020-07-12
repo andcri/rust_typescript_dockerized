@@ -1,51 +1,25 @@
-extern crate actix;
-extern crate actix_web;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate json;
+use actix_web::{web, App, HttpRequest, HttpServer, Responder};
+use listenfd::ListenFd;
 
-use actix_web::{http, server, App, Path, Responder, HttpResponse, Json};
-use std::env;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Greet {
-    name: String,
-    number: i32,
+async fn index(_req: HttpRequest) -> impl Responder {
+    "Hello World!"
+}
+async fn index2(_req: HttpRequest) -> impl Responder {
+    "Hello World! again"
 }
 
-fn hello(item: Json<Greet>) -> HttpResponse {
-    println!("model: {:?}", &item);
-    HttpResponse::Ok().json(item.0)
-}
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
+    let mut listenfd = ListenFd::from_env();
+    let mut server = HttpServer::new(|| App::new()
+        .route("/", web::get().to(index))
+        .route("/again", web::get().to(index2)));
 
-fn index(info: Path<(u32, String)>) -> impl Responder {
-    format!("Hello {}! id: {}", info.1, info.0)
-}
-
-fn main() {
-    let addr = match env::var("SERVER_HOST") {
-        Ok(host) => host,
-        Err(_e) => "0.0.0.0:8000".to_string(),
+    server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
+        server.listen(l)?
+    } else {
+        server.bind("0.0.0.0:8000")?
     };
-    let sys = actix::System::new("json-example");
 
-    server::new(|| {
-        App::new()
-            .resource("/hello", |r| {
-                r.method(http::Method::POST)
-                    .with_config(hello, |(cfg,)| {
-                        cfg.limit(4096); // Limit size of the payload.
-                    })
-            })
-        .route("/{id}/{name}/index.html", http::Method::GET, index)
-    })
-    .bind(&addr)
-    .unwrap()
-    .shutdown_timeout(1)
-    .start();
-
-    println!("Started http server: {}", &addr);
-    let _ = sys.run();
+    server.run().await
 }
