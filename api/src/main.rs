@@ -1,7 +1,10 @@
 #[macro_use]
 extern crate diesel;
 
-use actix_web::{web, get, post, middleware, App, HttpRequest, HttpServer, Responder, Result, Error, HttpResponse};
+use actix_web::{
+    get, middleware, post, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
+    Result,
+};
 use listenfd::ListenFd;
 use serde::Deserialize;
 
@@ -18,10 +21,12 @@ struct Info {
     username: String,
 }
 
-
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 #[get("/user/{user_id}")]
-async fn get_user(pool: web::Data<DbPool>, user_uid: web::Path<Uuid>) -> Result<HttpResponse, Error> {
+async fn get_user(
+    pool: web::Data<DbPool>,
+    user_uid: web::Path<Uuid>,
+) -> Result<HttpResponse, Error> {
     let user_uid = user_uid.into_inner();
     let conn = pool.get().expect("couldn't get connection with the pool");
 
@@ -36,8 +41,7 @@ async fn get_user(pool: web::Data<DbPool>, user_uid: web::Path<Uuid>) -> Result<
     if let Some(user) = user {
         Ok(HttpResponse::Ok().json(user))
     } else {
-        let res = HttpResponse::NotFound()
-            .body(format!("No user found with uid: {}", user_uid));
+        let res = HttpResponse::NotFound().body(format!("No user found with uid: {}", user_uid));
         Ok(res)
     }
 }
@@ -70,8 +74,8 @@ async fn index2(_req: HttpRequest) -> impl Responder {
 async fn index3(info: web::Json<Info>) -> Result<String> {
     let test = &info.username;
     let mut fin = String::new();
-    for c in test.chars(){
-        if c == ' '{
+    for c in test.chars() {
+        if c == ' ' {
             fin.push('-')
         } else if c.is_numeric() {
             fin.push(c)
@@ -82,7 +86,7 @@ async fn index3(info: web::Json<Info>) -> Result<String> {
             fin.push(c)
         }
     }
-    Ok(format!("{}", fin))
+    Ok(fin)
 }
 
 #[actix_rt::main]
@@ -98,14 +102,16 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let mut server = HttpServer::new(move || App::new()
-        .data(pool.clone())
-        .wrap(middleware::Logger::default())
-        .service(get_user)
-        .service(add_user)
-        .route("/api", web::get().to(index))
-        .route("/api/post", web::post().to(index3))
-        .route("/api/again", web::get().to(index2)));
+    let mut server = HttpServer::new(move || {
+        App::new()
+            .data(pool.clone())
+            .wrap(middleware::Logger::default())
+            .service(get_user)
+            .service(add_user)
+            .route("/api", web::get().to(index))
+            .route("/api/post", web::post().to(index3))
+            .route("/api/again", web::get().to(index2))
+    });
 
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
         server.listen(l)?
