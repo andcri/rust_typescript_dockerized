@@ -1,15 +1,64 @@
-// specify in wich folder the file that we want to use is
-#[path = "employees/route.rs"] mod route;
+#[macro_use]
+extern crate diesel;
 
-use actix_web::{web, App, HttpRequest, HttpServer, Responder, Result};
+use actix_web::{web, get, post, middleware, App, HttpRequest, HttpServer, Responder, Result, Error, HttpResponse};
 use listenfd::ListenFd;
 use serde::Deserialize;
-// specify wich function of the module we want to import 
-use route::find_all;
+
+use diesel::prelude::*;
+use diesel::r2d2::{self, ConnectionManager};
+use uuid::Uuid;
+
+mod actions;
+mod models;
+mod schema;
 
 #[derive(Deserialize)]
 struct Info {
     username: String,
+}
+
+
+type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+#[get("/user/{user_id}")]
+async fn get_user(pool: web::Data<DbPool>, user_uid: web::Path<Uuid>) -> Result<HttpResponse, Error> {
+    let user_uid = user_uid.into_inner();
+    let conn = pool.get().expect("couldn't get connection with the pool");
+
+    // use web::block to offload blocking Diesel code without blocking server thread
+    let user = web::block(move || actions::find_user_by_uid(user_uid, &conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    if let Some(user) = user {
+        Ok(HttpResponse::Ok().json(user))
+    } else {
+        let res = HttpResponse::NotFound()
+            .body(format!("No user found with uid: {}", user_uid));
+        Ok(res)
+    }
+}
+
+/// Inserts new user with name defined in form.
+#[post("/user")]
+async fn add_user(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewUser>,
+) -> Result<HttpResponse, Error> {
+    let conn = pool.get().expect("couldn't get db connection from pool");
+
+    // use web::block to offload blocking Diesel code without blocking server thread
+    let user = web::block(move || actions::insert_new_user(&form.name, &conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    Ok(HttpResponse::Ok().json(user))
 }
 
 async fn index(_req: HttpRequest) -> impl Responder {
@@ -39,10 +88,23 @@ async fn index3(info: web::Json<Info>) -> Result<String> {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let mut listenfd = ListenFd::from_env();
-    let mut server = HttpServer::new(|| App::new()
+    std::env::set_var("RUST_LOG", "actix_web=info");
+    env_logger::init();
+    dotenv::dotenv().ok();
+
+    let connspec = std::env::var("DATABASE_URL").expect("DATABASE_URL");
+    let manager = ConnectionManager::<PgConnection>::new(connspec);
+    let pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create pool.");
+
+    let mut server = HttpServer::new(move || App::new()
+        .data(pool.clone())
+        .wrap(middleware::Logger::default())
+        .service(get_user)
+        .service(add_user)
         .route("/api", web::get().to(index))
         .route("/api/post", web::post().to(index3))
-        .route("/employee", web::get().to(find_all))
         .route("/api/again", web::get().to(index2)));
 
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
