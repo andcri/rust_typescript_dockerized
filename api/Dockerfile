@@ -1,7 +1,5 @@
 FROM ubuntu:20.04
 
-ENV DATABASE_URL=$DATABASE_URL
-
 RUN apt-get update && apt-get -y install ca-certificates curl build-essential libpq-dev
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
