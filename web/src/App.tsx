@@ -10,6 +10,8 @@ export default function App () {
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
   const [show, setShow] = useState(false);
+  const [email, setEmail] = useState("");
+//  const [password, setPassword] = useState("");
 
   useEffect(() => {
     axios.get('/api')
@@ -29,10 +31,24 @@ export default function App () {
 
   } 
 
+  function submitForm () {
+    if (!validateEmail(email)) return;
+    axios.post('/api/post', {
+      'username': email
+    }).then(res => {
+      setResult(res.data) 
+    })
+  }
+
   function copied () {
     navigator.clipboard.writeText(result)
     setShow(true)
   }
+
+  function validateEmail(email: string){
+      var re = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()\.,;\s@\"]+\.{0,1})+([^<>()\.,;:\s@\"]{2,}|[\d\.]+))$/
+      return re.test(email);
+    }
 
   return (
     <div>
@@ -67,6 +83,8 @@ export default function App () {
             <Button variant="warning" onClick={copied}>Copy</Button>
           </div>
           <div className="col-sm"/>
+            <input type="text" className="form-control" onChange={(e) => setEmail(e.target.value)}/>
+            <Button variant="primary" onClick={submitForm}>Submit</Button>
         </div>
       </div>
     </div>
