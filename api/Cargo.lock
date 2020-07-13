@@ -722,6 +722,7 @@ dependencies = [
  "actix-web",
  "listenfd",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

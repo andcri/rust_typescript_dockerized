@@ -1,6 +1,11 @@
+// specify in wich folder the file that we want to use is
+#[path = "employees/route.rs"] mod route;
+
 use actix_web::{web, App, HttpRequest, HttpServer, Responder, Result};
 use listenfd::ListenFd;
 use serde::Deserialize;
+// specify wich function of the module we want to import 
+use route::find_all;
 
 #[derive(Deserialize)]
 struct Info {
@@ -37,6 +42,7 @@ async fn main() -> std::io::Result<()> {
     let mut server = HttpServer::new(|| App::new()
         .route("/api", web::get().to(index))
         .route("/api/post", web::post().to(index3))
+        .route("/employee", web::get().to(find_all))
         .route("/api/again", web::get().to(index2)));
 
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
