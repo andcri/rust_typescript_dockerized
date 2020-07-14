@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 
-RUN apt-get update && apt-get -y install ca-certificates curl build-essential libpq-dev
+RUN apt-get update && apt-get -y install ca-certificates curl build-essential libpq-dev libssl-dev
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
