@@ -1,6 +1,8 @@
 FROM ubuntu:20.04
 
-RUN apt-get update && apt-get -y install ca-certificates curl build-essential libpq-dev libssl-dev
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get -y install ca-certificates curl build-essential libpq-dev pkg-config libssl-dev clang
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
